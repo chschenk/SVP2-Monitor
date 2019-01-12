@@ -387,7 +387,7 @@ class QTarget(QWidget):
 					s = "X"
 				if shot_index == self._current_step:
 					qp.setFont(bold_font)
-				qp.drawText(current_x, h - height - self._border, s)
+				qp.drawText(current_x, w + font_metrics.height() + 2 * self._border, s)
 				if shot_index == self._current_step:
 					qp.setFont(font)
 				current_x += padding + font_metrics.width(s)
