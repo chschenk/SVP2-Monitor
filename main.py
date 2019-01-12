@@ -8,6 +8,7 @@ from math import cos, sin, pi
 from threading import Thread
 from time import sleep
 from enum import Enum
+from datetime import datetime
 import sys
 
 class MonitorSetting(Enum):
@@ -128,7 +129,7 @@ class QTable(QWidget):
 
 class QTicker(QWidget):
 
-	_font_size = 20
+	_font_size = 30
 	_font_name = "Arial"
 	_font_color = QColor(255, 255, 255)
 	_background_color = QColor(0, 106, 40)
@@ -136,6 +137,7 @@ class QTicker(QWidget):
 	_text = None
 	_ticker_pos1 = 0
 	_ticker_pos2 = 0
+	_clock_enabled = True
 
 	def __init__(self, width, height):
 		super().__init__()
@@ -181,6 +183,12 @@ class QTicker(QWidget):
 		self._ticker_pos2 = font_metrics.width(full_text) + font_metrics.width(" ")
 		self.update()
 
+	def set_clock_enabled(self)
+		self._clock_enabled = True
+
+	def set_clock_disabled(self)
+		self._clock_enabled = False
+
 	def paintEvent(self, e):
 		qp = QPainter()
 		qp.begin(self)
@@ -221,7 +229,7 @@ class QTicker(QWidget):
 		h = self.height()
 		height = font_metrics.height()
 
-		y = h - int(font_metrics.height() / 2)
+		y = (h / 2) + (height / 2) - 10
 
 		if self._text is None:
 			return
@@ -231,6 +239,13 @@ class QTicker(QWidget):
 		#Draw text
 		qp.drawText(self._ticker_pos1, y, self._text)
 		qp.drawText(self._ticker_pos2, y, self._text)
+
+		if self._clock_enabled:
+			clock_space = font_metrics.width("00:00")
+			space = font_metrics.width(" ")
+			qp.fillRect(w - 2 * space - clock_space, 0, clock_space + 2 * space, h, self._font_color)
+			qp.setPen(QPen(self._background_color))
+			qp.drawText(w - space - clock_space, y, datetime.now().strftime("%H:%M"))
 
 
 class QTarget(QWidget):
