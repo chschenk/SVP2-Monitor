@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QTableView, QTableWidgetItem, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QTableView, QTableWidgetItem, QHBoxLayout, QVBoxLayout, QSizePolicy
 from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QPen, QFontMetrics
 from signal import signal, SIGINT, SIG_DFL
 from collections import deque
@@ -124,7 +124,115 @@ class QTable(QWidget):
 					cell_index += 1
 			current_y += 3 * self._line_width + height
 			qp.drawLine(self._border, current_y, w - self._border, current_y)
+
+
+class QTicker(QWidget):
+
+	_font_size = 20
+	_font_name = "Arial"
+	_font_color = QColor(255, 255, 255)
+	_background_color = QColor(0, 106, 40)
+	_speed = 1
+	_text = None
+	_ticker_pos1 = 0
+	_ticker_pos2 = 0
+
+	def __init__(self, width, height):
+		super().__init__()
+		self.initUI(width, height)
+		thread = Thread(target=self.timer)
+		thread.start()
+
+	def initUI(self, width, height):
+		self.setMinimumSize(width, height)
+
 		
+	def set_speed(self, speed):
+		self._speed = speed
+
+	def set_background_color(self, color):
+		self._background_color = color
+		self.update()
+
+	def set_font_color(self, color):
+		self._font_color = color
+		self.update()
+
+	def set_font_size(self, font_size):
+		self._font_size = font_size
+		self.update()
+
+	def set_font_name(self, font_name):
+		self._font_name = font_name
+		self.update()
+
+	def set_text(self, text):
+		if text is None:
+			self._text = None
+			return
+		font = QFont(self._font_name, self._font_size, QFont.Light)
+		font_metrics = QFontMetrics(font)
+		full_text = text
+		w = self.width()
+		while font_metrics.width(full_text) < width:
+			full_text = "{} {}".format(full_text, text)
+		self._text = full_text
+		self._ticker_pos1 = 0
+		self._ticker_pos2 = font_metrics.width(full_text) + font_metrics.width(" ")
+		self.update()
+
+	def paintEvent(self, e):
+		qp = QPainter()
+		qp.begin(self)
+		self.drawWidget(qp)
+		qp.end()
+
+	def timer(self):
+		while True:
+			font = QFont(self._font_name, self._font_size, QFont.Light)
+			font_metrics = QFontMetrics(font)
+			space = font_metrics.width(" ")
+			text_width = font_metrics.width(self._text)
+
+			self._ticker_pos1 -= self._speed
+			self._ticker_pos2 -= self._speed
+			if self._ticker_pos1 + text_width < 0:
+				self._ticker_pos1 = self._ticker_pos2 + space + text_width
+
+			if self._ticker_pos2 + text_width < 0:
+				self._ticker_pos2 = self._ticker_pos1 + space + text_width
+			self.update()
+			sleep(0.01)
+
+	def drawWidget(self, qp):
+
+		#Init fonts
+		font = QFont(self._font_name, self._font_size, QFont.Light)
+		font_metrics = QFontMetrics(font)
+
+		#Init QPainter
+		pen = QPen(QColor(255, 255, 255))
+		qp.setFont(font)
+		qp.setBrush(self._font_color)
+		qp.setPen(pen)
+
+		#Setting up some helper vars
+		w = self.width()
+		h = self.height()
+		height = font_metrics.height()
+
+		y = h - int(font_metrics.height() / 2)
+
+		if self._text is None:
+			return
+		#Draw background
+		qp.fillRect(0, 0, w, h, self._background_color)
+
+		#Draw text
+		qp.drawText(self._ticker_pos1, y, self._text)
+		qp.drawText(self._ticker_pos2, y, self._text)
+
+
 class QTarget(QWidget):
 
 	_target_pixmap = None
@@ -164,7 +272,7 @@ class QTarget(QWidget):
 		self._font_name = font_name
 		self.update()
 
-        def paintEvent(self, e):
+	def paintEvent(self, e):
 		qp = QPainter()
 		qp.begin(self)
 		self.drawWidget(qp)
@@ -304,12 +412,17 @@ class Monitor(QWidget):
 	def initUI(self, width, height):
 		image = QPixmap("Zielscheibe.png")
 		
-
-		self.create_table(height * 0.8, 0)
-		self.create_target(0, 0, image)
-		self.layout = QHBoxLayout()
-		self.layout.addWidget(self.target)
-		self.layout.addWidget(self.table)
+		ticker_height = 50
+		available_height = height - ticker_height
+		self.create_table(available_height * 0.8, 0)
+		self.create_target(0, 0, image, available_height * 0.8, available_height * 0.8)
+		self.create_ticker(0, available_height, width, ticker_height)
+		h_layout = QHBoxLayout()
+		h_layout.addWidget(self.target)
+		h_layout.addWidget(self.table)
+		self.layout = QVBoxLayout()
+		self.layout.addLayout(h_layout)
+		self.layout.addWidget(self.ticker)
 		self.setLayout(self.layout)
 
 
@@ -318,10 +431,11 @@ class Monitor(QWidget):
 
 		self.add_test_data()
 
-	def create_target(self, x, y, image):
+	def create_target(self, x, y, image, width, height):
 		self.target = QTarget(image)
 		self.target.move(0,0)
-		self.target.resize(height * 0.8, height * 0.8)
+		self.target.resize(width, height)
+		#self.target.setFixedSize(width, height)
 
 	def create_table(self, x, y):
 		self.table = QTable()
@@ -330,12 +444,20 @@ class Monitor(QWidget):
 		self.table.add_column("Ringe")
 		self.table.move(x, y)
 
+	def create_ticker(self, x, y, width, height):
+		self.ticker = QTicker(width - 22, height)
+		self.ticker.move(x, y)
+		self.ticker.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
 	def add_result(self, name, profile, results, monitor_settings):
 		sum = 0
 		for s in results:
 			sum += s[2]
 		self.table.add_row([name, "LG 10", "98"])
 		self.target.add_sequence(name, profile, results, monitor_settings)
+
+	def set_ticker_message(self, message):
+		self.ticker.set_text(message)
 
 	def add_test_data(self):
 		results = [
@@ -351,6 +473,7 @@ class Monitor(QWidget):
 			[50.7, 131, 10, True]
 		]
 		self.add_result("Test Person", "LG 10", results, MonitorSetting.Everything)
+		self.set_ticker_message("Hello World!")
 
 
 if __name__ == "__main__":
