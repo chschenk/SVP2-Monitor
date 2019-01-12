@@ -453,7 +453,7 @@ class Monitor(QWidget):
 		sum = 0
 		for s in results:
 			sum += s[2]
-		self.table.add_row([name, "LG 10", str(sum)])
+		self.table.add_row([name, profile, str(sum)])
 		self.target.add_sequence(name, profile, results, monitor_settings)
 
 	def set_ticker_message(self, message):
