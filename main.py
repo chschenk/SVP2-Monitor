@@ -453,14 +453,14 @@ class Monitor(QWidget):
 		sum = 0
 		for s in results:
 			sum += s[2]
-		self.table.add_row([name, "LG 10", "98"])
+		self.table.add_row([name, "LG 10", str(sum)])
 		self.target.add_sequence(name, profile, results, monitor_settings)
 
 	def set_ticker_message(self, message):
 		self.ticker.set_text(message)
 
 	def add_test_data(self):
-		results = [
+		results1 = [
 			[222.3, 460, 9, True],
 			[170.7, 120, 10, True],
 			[347.8, 73, 10, True],
@@ -472,7 +472,15 @@ class Monitor(QWidget):
 			[202.3, 193, 10, True],
 			[50.7, 131, 10, True]
 		]
-		self.add_result("Test Person", "LG 10", results, MonitorSetting.Everything)
+		results2 = [
+			[222.3, 460, 9, True],
+			[170.7, 120, 10, True],
+			[347.8, 73, 10, True],
+			[295.1, 370, 9, True],
+			[231.6, 282, 9, True],
+		]
+		self.add_result("Test Person 1", "LG 10", results1, MonitorSetting.Everything)
+		self.add_result("Test Person 2", "LG 5", results2, MonitorSetting.Everything)
 		self.set_ticker_message("Hello World!")
 
 
