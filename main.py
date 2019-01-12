@@ -131,10 +131,10 @@ class QTarget(QWidget):
 	_border = 10
 	_font_size = 20
 	_font_name = "Arial"
+	_interval = 5
 	_queue = deque()
 	_current_record = None
 	_current_step = 0
-	_interval = 5
 	_shots = list()
 	def __init__(self, target_pixmap):
 		super().__init__()
@@ -149,7 +149,22 @@ class QTarget(QWidget):
 	def add_sequence(self, name, profile, results, monitor_setting):
 		self._queue.append((name, profile, results, monitor_setting))
 		
-	def paintEvent(self, e):
+	def set_interval(self, line_width):
+		self._interval = interval
+
+	def set_border(self, border):
+		self._border = border
+		self.update()
+
+	def set_font_size(self, font_size):
+		self._font_size = font_size
+		self.update()
+
+	def set_font_name(self, font_name):
+		self._font_name = font_name
+		self.update()
+
+        def paintEvent(self, e):
 		qp = QPainter()
 		qp.begin(self)
 		self.drawWidget(qp)
