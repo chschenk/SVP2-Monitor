@@ -183,10 +183,10 @@ class QTicker(QWidget):
 		self._ticker_pos2 = font_metrics.width(full_text) + font_metrics.width(" ")
 		self.update()
 
-	def set_clock_enabled(self)
+	def set_clock_enabled(self):
 		self._clock_enabled = True
 
-	def set_clock_disabled(self)
+	def set_clock_disabled(self):
 		self._clock_enabled = False
 
 	def paintEvent(self, e):
