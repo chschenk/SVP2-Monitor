@@ -15,6 +15,7 @@ import sys
 
 
 MONITOR_DATA_URL = "http://localhost:8000/api/monitor/queue"
+MONITOR_MESSAGE_URL = "http://localhost:8000/api/monitor/message"
 
 
 class MonitorSetting(Enum):
@@ -142,6 +143,7 @@ class QTicker(QWidget):
 	_background_color = QColor(0, 106, 40)
 	_speed = 1
 	_text = None
+	_normal_text = None
 	_ticker_pos1 = 0
 	_ticker_pos2 = 0
 	_clock_enabled = True
@@ -179,6 +181,9 @@ class QTicker(QWidget):
 		if text is None:
 			self._text = None
 			return
+		if text == self._normal_text:
+			return
+		self._normal_text = text
 		font = QFont(self._font_name, self._font_size, QFont.Light)
 		font_metrics = QFontMetrics(font)
 		full_text = text
@@ -511,7 +516,14 @@ class Monitor(QWidget):
 			shot_set = data['sequence']['shot_set']
 			for shot in shot_set:
 				results.append([float(shot['angle']), float(shot['factor_value']), float(shot['value']), shot['valid']]) 
-			self.add_result(name, profile, results, monitor_setting) 
+			self.add_result(name, profile, results, monitor_setting)
+
+		response = http_get(MONITOR_MESSAGE_URL)
+		if response.status_code == 200:
+		    message = response.json()['value']
+		else:
+		    message = None
+		self.set_ticker_message(message)
 
 	def add_test_data(self):
 		results1 = [
