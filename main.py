@@ -2,6 +2,8 @@
 
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QTableView, QTableWidgetItem, QHBoxLayout, QVBoxLayout, QSizePolicy
 from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QPen, QFontMetrics
+from PyQt5.QtCore import QTimer
+from requests import get as http_get
 from signal import signal, SIGINT, SIG_DFL
 from collections import deque
 from math import cos, sin, pi
@@ -11,12 +13,17 @@ from enum import Enum
 from datetime import datetime
 import sys
 
+
+MONITOR_DATA_URL = "http://localhost:8000/api/monitor/queue"
+
+
 class MonitorSetting(Enum):
 	Nothing = 0
 	ShotImage = 1
 	ShotImageWithPoints = 3
 	EverythingAnonym = 7
 	Everything = 15
+
 
 class QTable(QWidget):
 
@@ -443,7 +450,10 @@ class Monitor(QWidget):
 
 		self.showFullScreen()
 		self.show()
-
+		
+		self.timer = QTimer()
+		self.timer.timeout.connect(self.poll_monitor_data)
+		self.timer.start(1000) #Every second
 		self.add_test_data()
 
 	def create_target(self, x, y, image, width, height):
@@ -473,6 +483,35 @@ class Monitor(QWidget):
 
 	def set_ticker_message(self, message):
 		self.ticker.set_text(message)
+
+	def poll_monitor_data(self):
+		response = http_get(MONITOR_DATA_URL)
+		if response.status_code == 200:
+			data = response.json()
+
+			first_name = data['sequence']['member']['first_name'] 
+			last_name = data['sequence']['member']['last_name'] 
+			name = "{} {}".format(first_name, last_name)
+
+			profile = data['sequence']['profile']['name'] 
+
+			monitor_setting = MonitorSetting.Nothing
+			ms = data['monitor_setting']
+			if ms == 'N':
+				monitor_setting = MonitorSetting.Nothing
+			elif ms == 'S':
+				monitor_setting = MonitorSetting.ShotImage
+			elif ms == 'P':
+				monitor_setting = MonitorSetting.ShotImageWithPoints
+			elif ms == 'A':
+				monitor_setting = MonitorSetting.EverythingAnonym
+			elif ms == 'E':
+				monitor_setting = MonitorSetting.Everything
+			results = list()
+			shot_set = data['sequence']['shot_set']
+			for shot in shot_set:
+				results.append([float(shot['angle']), float(shot['factor_value']), float(shot['value']), shot['valid']]) 
+			self.add_result(name, profile, results, monitor_setting) 
 
 	def add_test_data(self):
 		results1 = [
